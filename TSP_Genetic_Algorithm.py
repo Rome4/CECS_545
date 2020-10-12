@@ -79,7 +79,7 @@ def main():
 
 	# Generate initial population of size = number of cities
 	num_of_cities: int = TSP.data["DIMENSION"]
-	pop_size: int = num_of_cities
+	pop_size: int = 40
 	population: list = [[]]
 	for i in range(pop_size):
 		rand_path: list = random.sample(range(1,num_of_cities+1),num_of_cities)
@@ -94,27 +94,20 @@ def main():
 	for p in population:
 		p.append(p[0])
 
-	print("")
-	print("Population[0]", end=" ")
-	print(len(population[0]), end=" ")
-	print(float(str(round(tsp.fitness_function(population[0]), 4))), end=": ")
-	tsp.print_path(population[0])
+	best_path: list = []
+	generation: list = population
+	count: int = 1
+	while True:
+		generation = tsp.next_gen(generation)
+		best_path = tsp.find_best_path(generation)
+		print("")
+		print("Best path %d" % count,end=" ")
+		count += 1
+		print(float(str(round(tsp.fitness_function(best_path), 4))), end=": ")	
+		if tsp.fitness_function(best_path) < 1600:
+			break
 
-	li = tsp.mutate_chromosome(population[0])
-
-	print("")
-	print("Pop[0] mutated", end=" ")
-	print(len(li), end=" ")
-	print(float(str(round(tsp.fitness_function(li),4))), end=": ")
-	tsp.print_path(li)
-	print("")
-	offspring: list = tsp.crossover(population)
-
-	population2: list = [[]]
-	for i in range(len(population)):
-		offspring: list = tsp.crossover(population)
-		population2.append(offspring)
-	population2.pop(0)	
+	best_path = tsp.find_best_path(generation)	
 
 	fig = plt.figure()
 	fig.canvas.set_window_title("TSP Analysis: " + TSP.data["NAME"] + " (" + ARGS.file + ")")
@@ -127,9 +120,9 @@ def main():
 			best_fit = tmp_fit
 			best_path = path
 
-	for i in range(len(path)):
-		plt.plot((best_path[i-1].x, best_path[i].x), (best_path[i-1].y, best_path[i].y), "o-", color=color)
-		plt.text(best_path[i-1].x, best_path[i-1].y, best_path[i-1].name, fontsize=9)
+	for i in range(len(path)-1):
+		plt.plot((best_path[i].x, best_path[i+1].x), (best_path[i].y, best_path[i+1].y), "o-", color=color)
+		plt.text(best_path[i].x, best_path[i].y, best_path[i].name, fontsize=9)
 		color = "#e11f26"
 	plt.show()
 

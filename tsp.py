@@ -123,8 +123,9 @@ def fitness_function(cities: list) -> float:
 
 	return total_distance
 
-def mutate_chromosome(cities: list) -> list:
-	mutated = cities
+def mutate_chromosome(pop: list) -> list:
+	random_select: int = random.randrange(1,int(len(pop)-1),1)
+	mutated = pop[random_select]
 	mutated.pop(len(mutated)-1)
 
 	for i in range(0,5,1):
@@ -140,34 +141,28 @@ def crossover(pop: list) -> list:
 	weight: list = []
 	offspring: list = []
 	total_fit: float = 0.0
+	tmp: list = pop
 
-	for p in pop:
+	for p in tmp:
 		d: float = float(str(round(fitness_function(p),3)))
 		fitness.append(d)
 		total_fit += d
 
 	# Create weighted fitness score based on cost difference from the mean
 	# The higher the score the better, negative scores are bad
-	mean: float = total_fit / len(pop)
+	mean: float = total_fit / len(tmp)
 	for i in range(len(fitness)):
 		w: float = float(str(round((mean - fitness[i]),4)))
 		weight.append(w)
-
-	print("Fitness", end=" ")
-	print(len(fitness), end=": ")
-	print(*fitness, sep=", ")
-	print("Weight", end=" ")
-	print(len(weight), end=": ")
-	print(*weight, sep=", ")
 
 	# Select random parent based on fitness weight
 	# Sum all positive weights, generate random number between 1 and sum of pos. weights, pick the highest weight that is < random number
 	total_pos_weight: int = 0
 	max_weight: float = 0.0
-	parent1: list 
-	parent2: list
-	p1_index: int 
-	p2_index: int
+	parent1: list = []
+	parent2: list = []
+	p1_index: int = 0
+	p2_index: int = 0
 	for i in weight:
 		if i > 0:
 			total_pos_weight += int(i)
@@ -176,7 +171,7 @@ def crossover(pop: list) -> list:
 		if weight[i] > 0 and weight[i] < random_weight and weight[i] > max_weight:
 			max_weight = weight[i]
 			p1_index = i
-	parent1 = pop[p1_index]
+	parent1 = tmp[p1_index]
 
 	max_weight = 0.0
 	random_weight: int = random.randrange(1,total_pos_weight,1)
@@ -186,38 +181,57 @@ def crossover(pop: list) -> list:
 		if weight[i] > 0 and weight[i] < random_weight and weight[i] > max_weight:
 			max_weight = weight[i]
 			p2_index = i
-	parent2 = pop[p2_index]
+	parent2 = tmp[p2_index]
 
-	print("")
-	print("Parent1", end=" ")
-	print(len(parent1), end=" ")
-	print(float(str(round(fitness_function(parent1), 4))), end=": ")
-	print_path(parent1)
-	print("")
-	print("Parent2", end=" ")
-	print(len(parent2), end=" ")
-	print(float(str(round(fitness_function(parent2), 4))), end=": ")
-	print_path(parent2)
+	if int(len(parent1)) == 0:
+		return offspring
+	else:
+		# Get random subset of parent1, max 25% of total chromosome length
+		random_subset: int = random.randrange(2,15,1)
+		random_start_index: int = random.randrange(0,len(parent1) - random_subset - 1,1)
+		for i in range(1,random_subset,1):
+			offspring.append(parent1[random_start_index + i])
 
-	# Get random subset of parent1, max 25% of total chromosome length
-	random_subset: int = random.randrange(2,15,1)
-	random_start_index: int = random.randrange(0,len(parent1) - random_subset - 1,1)
-	for i in range(1,random_subset,1):
-		offspring.append(parent1[random_start_index + i])
+		for i in parent2:
+			if not i in offspring:
+				offspring.append(i)
+		offspring.append(offspring[0])
+		
+		return offspring
 
-	for i in parent2:
-		if not i in offspring:
-			offspring.append(i)
-	offspring.append(offspring[0])
+def next_gen(pop: list) -> list:
+	generation: list = [[]]
+	tmp: list = pop
+	chromosome: list = []
+	rand: int
+	total_fit: float = 0.0
 
-	print("")
-	print("Offspring", end=" ")
-	print(len(offspring), end=" ")
-	print(float(str(round(fitness_function(offspring), 4))), end=": ")
-	print_path(offspring)
+	for t in tmp:
+		d: float = float(str(round(fitness_function(t),3)))
+		total_fit += d
 
-	print("")
-	print(random_subset)
-	print(random_start_index)
-	
-	return offspring
+	mean: float = total_fit / len(tmp)
+
+	for i in range(1,20,1):
+		rand = random.randrange(1,100,1)
+		if rand > 2:
+			chromosome = crossover(pop)
+			generation.append(chromosome)
+		else:
+			chromosome = mutate_chromosome(pop)
+			generation.append(chromosome)
+
+			
+	generation.pop(0)
+	return generation
+
+def find_best_path(pop: list) -> list:
+	best_fit: float = 99999.9
+	best_path: list = []
+
+	for i in pop:
+		if fitness_function(i) < best_fit:
+			best_fit = fitness_function(i)
+			best_path = i
+
+	return best_path
