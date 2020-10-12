@@ -9,6 +9,7 @@ Date: 14 October 2020
 from collections import namedtuple
 import math
 import time
+import random
 from typing import Tuple
 
 City = namedtuple("City", "name x y")
@@ -82,6 +83,10 @@ class TspHandler:
 		# Return all sections
 		return result
 
+def print_path(path: list) -> None:
+	for i in range(len(path)):
+		print(path[i].name, end=", ")
+
 def get_distance(c1: City, c2: City) -> float:
 	"""Calculate the distance between two points in 2D Euclidean space."""
 	global CACHE
@@ -105,26 +110,114 @@ def get_distance(c1: City, c2: City) -> float:
 	# Return the calculated cache value
 	return CACHE["D"][name].distance
 
-def find_closest_city(city: City, cities: list) -> Edge:
-	"""Return the city nearest to the given city from a list of cities"""
-	global CACHE
-	
-	# Loop through all cities in a list and return the edge of two cities with the smallest distance
-	result: Edge = None
-	for c in cities:
-		
-		# Pass if the comparison is itself
-		if c == city:
-			continue
-		
-		# Store the running minimum
-		d: float = get_distance(city, c)
-		if result is None or d < result.distance:
-			result = Edge(city, c, d)
-	
-	# Return the grand minimum if there is one, otherwise return the original city
-	return city if result is None else result
-
 def fitness_function(cities: list) -> float:
+	"""Calculate fitness score for population"""
 
-	return 0
+	# Paramter weight coefficients
+	total_distance: float = 0.0
+
+	for i in range(len(cities)):
+		
+		distance: float = get_distance(cities[i-1],cities[i])
+		total_distance += distance
+
+	return total_distance
+
+def mutate_chromosome(cities: list) -> list:
+	mutated = cities
+	mutated.pop(len(mutated)-1)
+
+	for i in range(0,5,1):
+		mutated.append(mutated[0])
+		mutated.pop(0)
+
+	mutated.append(mutated[0])
+
+	return mutated
+
+def crossover(pop: list) -> list:
+	fitness: list = []
+	weight: list = []
+	offspring: list = []
+	total_fit: float = 0.0
+
+	for p in pop:
+		d: float = float(str(round(fitness_function(p),3)))
+		fitness.append(d)
+		total_fit += d
+
+	# Create weighted fitness score based on cost difference from the mean
+	# The higher the score the better, negative scores are bad
+	mean: float = total_fit / len(pop)
+	for i in range(len(fitness)):
+		w: float = float(str(round((mean - fitness[i]),4)))
+		weight.append(w)
+
+	print("Fitness", end=" ")
+	print(len(fitness), end=": ")
+	print(*fitness, sep=", ")
+	print("Weight", end=" ")
+	print(len(weight), end=": ")
+	print(*weight, sep=", ")
+
+	# Select random parent based on fitness weight
+	# Sum all positive weights, generate random number between 1 and sum of pos. weights, pick the highest weight that is < random number
+	total_pos_weight: int = 0
+	max_weight: float = 0.0
+	parent1: list 
+	parent2: list
+	p1_index: int 
+	p2_index: int
+	for i in weight:
+		if i > 0:
+			total_pos_weight += int(i)
+	random_weight: int = random.randrange(1,total_pos_weight,1)
+	for i in range(len(weight)):
+		if weight[i] > 0 and weight[i] < random_weight and weight[i] > max_weight:
+			max_weight = weight[i]
+			p1_index = i
+	parent1 = pop[p1_index]
+
+	max_weight = 0.0
+	random_weight: int = random.randrange(1,total_pos_weight,1)
+	for i in range(len(weight)):
+		if i == p1_index:
+			continue
+		if weight[i] > 0 and weight[i] < random_weight and weight[i] > max_weight:
+			max_weight = weight[i]
+			p2_index = i
+	parent2 = pop[p2_index]
+
+	print("")
+	print("Parent1", end=" ")
+	print(len(parent1), end=" ")
+	print(float(str(round(fitness_function(parent1), 4))), end=": ")
+	print_path(parent1)
+	print("")
+	print("Parent2", end=" ")
+	print(len(parent2), end=" ")
+	print(float(str(round(fitness_function(parent2), 4))), end=": ")
+	print_path(parent2)
+
+	# Get random subset of parent1, max 25% of total chromosome length
+	random_subset: int = random.randrange(2,15,1)
+	random_start_index: int = random.randrange(0,len(parent1) - random_subset - 1,1)
+	for i in range(1,random_subset,1):
+		offspring.append(parent1[random_start_index + i])
+
+	for i in parent2:
+		if not i in offspring:
+			offspring.append(i)
+	offspring.append(offspring[0])
+
+	print("")
+	print("Offspring", end=" ")
+	print(len(offspring), end=" ")
+	print(float(str(round(fitness_function(offspring), 4))), end=": ")
+	print_path(offspring)
+
+	print("")
+	print(random_subset)
+	print(random_start_index)
+	
+	return offspring

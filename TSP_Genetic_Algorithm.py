@@ -79,14 +79,59 @@ def main():
 
 	# Generate initial population of size = number of cities
 	num_of_cities: int = TSP.data["DIMENSION"]
+	pop_size: int = num_of_cities
 	population: list = [[]]
-	for i in range(num_of_cities):
-		chromosome: list = random.sample(range(1,num_of_cities+1),num_of_cities)
+	for i in range(pop_size):
+		rand_path: list = random.sample(range(1,num_of_cities+1),num_of_cities)
+		chromosome: list = []
+		for n in rand_path:
+			for x in cities:
+				if int(x.name) == n:
+					chromosome.append(x)
 		population.append(chromosome)
 
 	population.pop(0)
-	for i in population:
-		print(*i, sep = ", ")
+	for p in population:
+		p.append(p[0])
+
+	print("")
+	print("Population[0]", end=" ")
+	print(len(population[0]), end=" ")
+	print(float(str(round(tsp.fitness_function(population[0]), 4))), end=": ")
+	tsp.print_path(population[0])
+
+	li = tsp.mutate_chromosome(population[0])
+
+	print("")
+	print("Pop[0] mutated", end=" ")
+	print(len(li), end=" ")
+	print(float(str(round(tsp.fitness_function(li),4))), end=": ")
+	tsp.print_path(li)
+	print("")
+	offspring: list = tsp.crossover(population)
+
+	population2: list = [[]]
+	for i in range(len(population)):
+		offspring: list = tsp.crossover(population)
+		population2.append(offspring)
+	population2.pop(0)	
+
+	fig = plt.figure()
+	fig.canvas.set_window_title("TSP Analysis: " + TSP.data["NAME"] + " (" + ARGS.file + ")")
+	color: str = "#d08000"
+	best_path: list
+	best_fit: float = 9999999.0
+	for path in population:
+		tmp_fit = tsp.fitness_function(path)
+		if tmp_fit < best_fit:
+			best_fit = tmp_fit
+			best_path = path
+
+	for i in range(len(path)):
+		plt.plot((best_path[i-1].x, best_path[i].x), (best_path[i-1].y, best_path[i].y), "o-", color=color)
+		plt.text(best_path[i-1].x, best_path[i-1].y, best_path[i-1].name, fontsize=9)
+		color = "#e11f26"
+	plt.show()
 
 if __name__ == '__main__':
 	try:
