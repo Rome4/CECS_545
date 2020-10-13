@@ -79,10 +79,10 @@ def main():
 
 	# Generate initial population of size = number of cities
 	num_of_cities: int = TSP.data["DIMENSION"]
-	pop_size: int = 40
-	population: list = [[]]
+	pop_size: int = 35
+	population: list = []
 	for i in range(pop_size):
-		rand_path: list = random.sample(range(1,num_of_cities+1),num_of_cities)
+		rand_path: list = random.sample(range(1,num_of_cities+1,1),num_of_cities)
 		chromosome: list = []
 		for n in rand_path:
 			for x in cities:
@@ -90,12 +90,11 @@ def main():
 					chromosome.append(x)
 		population.append(chromosome)
 
-	population.pop(0)
 	for p in population:
 		p.append(p[0])
 
-	best_path: list = []
 	generation: list = population
+	best_path: list = []
 	count: int = 1
 	while True:
 		generation = tsp.next_gen(generation)
@@ -104,7 +103,7 @@ def main():
 		print("Best path %d" % count,end=" ")
 		count += 1
 		print(float(str(round(tsp.fitness_function(best_path), 4))), end=": ")	
-		if tsp.fitness_function(best_path) < 1600:
+		if tsp.fitness_function(best_path) < 1750:
 			break
 
 	best_path = tsp.find_best_path(generation)	
@@ -125,7 +124,7 @@ def main():
 		plt.text(best_path[i].x, best_path[i].y, best_path[i].name, fontsize=9)
 		color = "#e11f26"
 	plt.show()
-
+    
 if __name__ == '__main__':
 	try:
 		if os.path.isfile(ARGS.file):

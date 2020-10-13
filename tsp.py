@@ -90,10 +90,10 @@ def print_path(path: list) -> None:
 def get_distance(c1: City, c2: City) -> float:
 	"""Calculate the distance between two points in 2D Euclidean space."""
 	global CACHE
-	
+
 	if c1 == c2:
 		return 0.0
-	
+
 	# The unweighted naming convention for the cache will be <lower>-<upper>
 	name: str = ""
 	if int(c1.name) < int(c2.name):
@@ -115,114 +115,127 @@ def fitness_function(cities: list) -> float:
 
 	# Paramter weight coefficients
 	total_distance: float = 0.0
-
 	for i in range(len(cities)):
-		
 		distance: float = get_distance(cities[i-1],cities[i])
 		total_distance += distance
 
 	return total_distance
 
-def mutate_chromosome(pop: list) -> list:
-	random_select: int = random.randrange(1,int(len(pop)-1),1)
-	mutated = pop[random_select]
-	mutated.pop(len(mutated)-1)
+def selection(pop: list) -> list:
+	parents: list = []
+	weight: list = []
+	total_fit: float = 0.0
+	random_float: float = 0.0
+	p1_index: int = 5
+	p2_index: int = 10
 
-	for i in range(0,5,1):
-		mutated.append(mutated[0])
-		mutated.pop(0)
+	# Calculate total distance accross population
+	for p in pop:
+		fit_cal: float = fitness_function(p)
+		total_fit += fit_cal
 
-	mutated.append(mutated[0])
+	# Calculate individual chromosome distance weight
+	weight.append(0.0)
+	for p in pop:
+		fit_calc = fitness_function(p)/total_fit
+		weight.append(fit_calc)
+	for i in range(1,len(weight),1):
+		weight[i] = weight[i] + weight[i-1]
 
+	# Generate random weight and determin parents
+	random_float = random.randrange(1,1000,1)
+	random_float /= 1000.0
+	for i in range(0,len(weight)-1,1):
+		if random_float >= weight[i] and random_float < weight[i+1]:
+			p1_index: int = i
+
+	random_float = random.randrange(1,1000,1)
+	random_float /= 1000.0
+	for i in range(0,len(weight)-1,1):
+		if random_float >= weight[i] and random_float < weight[i+1]:
+			if i != p1_index:
+				p2_index: int = i
+			elif i == len(weight) - 1:
+				p2_index = len(weight) - 2
+			elif i == 0:
+				p2_index = 1
+				
+	parents.append(p1_index)
+	parents.append(p2_index)
+
+	return parents
+
+def mutate(pop: list) -> list:
+	mutated: list = []
+	p_size: int = len(pop[1])
+	index_mut = random.randrange(0, p_size, 1)
+	mutated = pop[index_mut]
+	
+	# Choose random indexes to swap in radomly chosen mutated chromosome
+	index1: int = random.randrange(1, p_size-1, 1)
+	index2: int = index1
+	while index2 == index1:
+		index2 = random.randrange(1, p_size-1, 1)
+	mutated[index1], mutated[index2] = mutated[index2], mutated[index1]
+	
 	return mutated
 
-def crossover(pop: list) -> list:
-	fitness: list = []
-	weight: list = []
-	offspring: list = []
-	total_fit: float = 0.0
-	tmp: list = pop
+def crossover(pop: list, parents: list) -> list:
+	offspring: list = [[]]
+	off1: list = []
+	off2: list = []
+	p_size: int = len(pop[parents[0]])
+	sub_size: int = p_size / 5
 
-	for p in tmp:
-		d: float = float(str(round(fitness_function(p),3)))
-		fitness.append(d)
-		total_fit += d
+    # Offspring 1 takes subsection in position from parent 1 and fills in from parent 2
+    # Offspring 2 does the same in reverse
+	random_subset: int = random.randrange(4,10,1)
+	random_start_index: int = random.randrange(0,p_size - random_subset - 1,1)
+	for i in range(p_size):
+		if i == random_start_index:
+			for j in range(random_subset):
+				off1.append(pop[parents[0]][i])
+				i += 1
+		else:
+			off1.append(pop[parents[1]][i])
 
-	# Create weighted fitness score based on cost difference from the mean
-	# The higher the score the better, negative scores are bad
-	mean: float = total_fit / len(tmp)
-	for i in range(len(fitness)):
-		w: float = float(str(round((mean - fitness[i]),4)))
-		weight.append(w)
+	for i in range(p_size):
+		if i == random_start_index:
+			for j in range(random_subset):
+				off2.append(pop[parents[1]][i])
+				i += 1
+		else:
+			off2.append(pop[parents[0]][i])
+			
+	offspring.append(off1)
+	offspring.append(off2)
+	offspring.pop(0)
 
-	# Select random parent based on fitness weight
-	# Sum all positive weights, generate random number between 1 and sum of pos. weights, pick the highest weight that is < random number
-	total_pos_weight: int = 0
-	max_weight: float = 0.0
-	parent1: list = []
-	parent2: list = []
-	p1_index: int = 0
-	p2_index: int = 0
-	for i in weight:
-		if i > 0:
-			total_pos_weight += int(i)
-	random_weight: int = random.randrange(1,total_pos_weight,1)
-	for i in range(len(weight)):
-		if weight[i] > 0 and weight[i] < random_weight and weight[i] > max_weight:
-			max_weight = weight[i]
-			p1_index = i
-	parent1 = tmp[p1_index]
-
-	max_weight = 0.0
-	random_weight: int = random.randrange(1,total_pos_weight,1)
-	for i in range(len(weight)):
-		if i == p1_index:
-			continue
-		if weight[i] > 0 and weight[i] < random_weight and weight[i] > max_weight:
-			max_weight = weight[i]
-			p2_index = i
-	parent2 = tmp[p2_index]
-
-	if int(len(parent1)) == 0:
-		return offspring
-	else:
-		# Get random subset of parent1, max 25% of total chromosome length
-		random_subset: int = random.randrange(2,15,1)
-		random_start_index: int = random.randrange(0,len(parent1) - random_subset - 1,1)
-		for i in range(1,random_subset,1):
-			offspring.append(parent1[random_start_index + i])
-
-		for i in parent2:
-			if not i in offspring:
-				offspring.append(i)
-		offspring.append(offspring[0])
-		
-		return offspring
+	return offspring
 
 def next_gen(pop: list) -> list:
-	generation: list = [[]]
-	tmp: list = pop
+
+	population_size: int = 25
+	carry_over_size: int = 10
+	generation: list = []
+	parents: list = []
 	chromosome: list = []
-	rand: int
-	total_fit: float = 0.0
+	elites: list = []
 
-	for t in tmp:
-		d: float = float(str(round(fitness_function(t),3)))
-		total_fit += d
-
-	mean: float = total_fit / len(tmp)
-
-	for i in range(1,20,1):
-		rand = random.randrange(1,100,1)
-		if rand > 2:
-			chromosome = crossover(pop)
-			generation.append(chromosome)
+	for i in range(0,population_size,1):
+		rand = random.randrange(1,1000,1)
+		if rand > 10:
+			parents = selection(pop)
+			chromosome = crossover(pop, parents)
 		else:
-			chromosome = mutate_chromosome(pop)
-			generation.append(chromosome)
+			chromosome = mutate(pop)
+		generation.append(chromosome)
 
-			
-	generation.pop(0)
+	# elites = find_elite_chroms(pop,carry_over_size)
+	# for j in range(carry_over_size):
+	# 	generation.append(elites[j])
+	# generation.pop(0)	
+	
 	return generation
 
 def find_best_path(pop: list) -> list:
@@ -235,3 +248,25 @@ def find_best_path(pop: list) -> list:
 			best_path = i
 
 	return best_path
+
+def find_elite_chroms(pop: list, n: int) -> list:
+	top_paths: list = [[]]
+	tmp: list = pop
+
+	# Create list of all chromosome fitness
+	indiv_fit: list = []
+
+	for p in pop:
+		c_fit: float = fitness_function(p)
+		indiv_fit.append(c_fit)
+
+	# Sort fitness list in ascending order
+	indiv_fit.sort()
+
+	for i in range(n):
+		for p in pop:
+			if fitness_function(p) == indiv_fit[i]:
+				top_paths.append(p)
+				break
+
+	return top_paths
