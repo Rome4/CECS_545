@@ -80,7 +80,7 @@ def main():
 
 	# Generate initial population of size = number of cities
 	num_of_cities: int = TSP.data["DIMENSION"]
-	pop_size: int = 50
+	pop_size: int = 40
 	population: list = []
 	for i in range(pop_size):
 		rand_path: list = random.sample(range(1,num_of_cities+1),num_of_cities)
