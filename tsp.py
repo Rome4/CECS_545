@@ -12,6 +12,10 @@ import time
 import random
 from typing import Tuple
 
+## Non-essential backend code was copied from Seth Phillips.
+## This code is non essential to the implementation of a genetic algorithm
+## and only helps get data from the file and calculate distance of a path.
+
 City = namedtuple("City", "name x y")
 Edge = namedtuple("Edge", "city1 city2 distance")
 
@@ -110,6 +114,9 @@ def get_distance(c1: City, c2: City) -> float:
 	# Return the calculated cache value
 	return CACHE["D"][name].distance
 
+## End of re-used code
+##
+
 def fitness_function(cities: list) -> float:
 	"""Calculate fitness score for population"""
 	# Paramter weight coefficients
@@ -135,18 +142,6 @@ def mutate_swap(pop: list) -> list:
 	while index2 == index1:
 		index2 = random.randrange(1, m_size-1, 1)
 	mutated[index1], mutated[index2] = mutated[index2], mutated[index1]
-
-	return mutated
-
-# Front of path manipulation focused mutation
-def mutate_front(pop: list) -> list:
-	mutated: list = []
-	p_end: int = len(pop)-1
-	index_mut = random.randrange(0, p_end, 1)
-	mutated = pop[index_mut]
-	
-	m_end: int = len(mutated)-1
-	pick:int = random.randrange(int(m_end/2), m_end, 1)
 
 	return mutated
 
@@ -228,7 +223,7 @@ def crossover(pop: list) -> list:
 			p.pop(len(p)-1)
 
 	# Tournament Selection
-	subset: int = int(len(pop[1]) / 5)
+	subset: int = int(len(pop[1]) / 10)
 	tournament: list = []
 	high: float = 999999.99
 	parent1: list = []
@@ -256,7 +251,7 @@ def crossover(pop: list) -> list:
 	# Implement multiple crossover methods
 	random_cross: int = random.randint(1,5)
 
-	if random_cross < 4:
+	if random_cross < 5:
 		offspring: list = subset_cross(parent1,parent2)
 	else:
 		offspring: list = cycle_cross(parent1,parent2)
@@ -265,14 +260,14 @@ def crossover(pop: list) -> list:
 
 def next_gen(pop: list) -> list:
 	#print(len(pop))
-	population_size: int = 25
+	population_size: int = 20
 	generation: list = []
 	chromosome: list = []
 	mut: list = []
 
 	for i in range(0,population_size,1):
 		rand = random.randrange(1,100,1)
-		if rand > 10:
+		if rand > 5:
 			chromosome = crossover(pop)
 			for c in chromosome:
 				generation.append(c)
