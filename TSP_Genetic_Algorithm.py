@@ -23,6 +23,7 @@ import os
 import platform
 import sys
 import random
+import time
 
 try:
 	from packaging import version
@@ -95,7 +96,8 @@ def main():
 	bpf: float = 0.0
 	generation: list = population
 	count: int = 1
-	last_hit: int = 1
+	last_hit_count: int = 0
+	time_start = time.time()
 	while True:
 		generation = tsp.next_gen(generation)
 		best_path = tsp.find_best_path(generation)
@@ -105,25 +107,27 @@ def main():
 			best_path.append(best_path[0])
 		bpf = tsp.fitness_function(best_path)
 
-		if float(str(round(bpf, 3))) != float(str(round(tmp_path_fit, 3))):
-
-			#print("")
-			print("Best path %d" % count,end=" ")
-			print(float(str(round(bpf, 8))))	
-			#tsp.print_path(best_path)
-			last_hit = count
+		print(count, end=": ")
+		print(float(str(round(bpf,3))))
 		count += 1
 
+		if bpf == tmp_path_fit:
+			last_hit_count += 1
+		else:
+			last_hit_count = 0
+
 		tmp_path_fit = bpf
-		# if (count - last_hit) > (TSP.data["DIMENSION"] * 10):
-		# 	break
-		if (count - last_hit) > 1000:
+
+		if (last_hit_count) > 1000:
 			break
+	
+	time_end = time.time()
 	
 	print("")
 	print("Best path %d" % count,end=" ")
 	count += 1
-	print(float(str(round(tsp.fitness_function(best_path), 4))), end=": ")	
+	print(float(str(round(tsp.fitness_function(best_path), 4))), end=" ")
+	print(float(str(round((time_end-time_start),2))),end=": ")	
 	tsp.print_path(best_path)
 
 	fig = plt.figure()
